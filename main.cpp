@@ -5,6 +5,7 @@
 #include <list>
 #include <unistd.h>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 #include "tree.h"
@@ -13,7 +14,7 @@
 #define TAG "main.cpp: "
 
 void test(const char *path) {
-    TreeNode *root = new TreeNode(path);
+    TreeNode *root = TreeNode::create_root(path);
     if (!root) {
         LOGE << TAG << "invalid node.\n";
         return;
@@ -22,17 +23,13 @@ void test(const char *path) {
     root->iterate_path(path);
     root->iterate_all_children(root);
 
-    root->remove_node("b");
+    TreeNode* b_node = root->get_TreeNode("b");
+    b_node->remove_node("b1.txt");
+    // root->remove_node("b");
     root->iterate_all_children(root);
 }
 
 int main(int argc, char *argv[]) {
-    // if (argc < 2) {
-    //     LOGE << "lack argv.\n";
-    //     return -1;
-    // }
-    
-    // test(argv[1]);
     test("/home/descosmos/c++/self_projects/Iterate_dir/test_dir");
     return 0;
 }
