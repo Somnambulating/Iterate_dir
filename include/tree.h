@@ -2,13 +2,15 @@
 #define _TREE_H_
 
 #include <list>
+#include <vector>
+#include <map>
+#include <queue>
 #include <string>
 #include <ctype.h>
 #include <filesystem>
 #include <fstream>
-#include <map>
-#include <queue>
 #include <cstdlib>
+#include <string.h>
 #include <assert.h>
 
 
@@ -40,9 +42,10 @@ public:
     static TreeNode* create_TreeNode(const std::string& fileName);
     void insert_child_node(const std::string& fileName);
     TreeNode* get_TreeNode(const std::string& fileName);
+    static TreeNode* find_TreeNode(TreeNode* root, const std::string& abosultePath);
     void erase_all(TreeNode* node);
     void remove_node(const std::string& filename);
-    void iterate_path(const std::string& path);
+    void create_path(const std::string& path);
     void update_node_info(NodeInfo *nodeInfo);
 
     // for test

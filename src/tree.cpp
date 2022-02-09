@@ -1,7 +1,7 @@
 #include "tree.h"
 #include "common.h"
 
-#define TAG "tree.cpp "
+#define TAG "tree.cpp-> "
 
 TreeNode::TreeNode(std::string fileName) {
     this->_parent = nullptr;
@@ -11,6 +11,11 @@ TreeNode::TreeNode(std::string fileName) {
      */
 }
 
+/*
+@ Function Name: TreeNode::create_root
+@ args: fileName
+@ ret: Return the root TreeNode, or nullptr if failed.
+*/
 TreeNode* TreeNode::create_root(const std::string& fileName) {
     TreeNode* root = create_TreeNode(fileName);
     root->_node_info._file_name = fileName;
@@ -18,11 +23,22 @@ TreeNode* TreeNode::create_root(const std::string& fileName) {
     return root;
 }
 
+/*
+@ Function Name: TreeNode::insert_child_node
+@ args: fileName
+@ ret: This function returns a new TreeNode node , or nullptr if the request fails.
+@ description: Insert a child TreeNode to children set.
+*/
 TreeNode* TreeNode::create_TreeNode(const std::string& fileName) {
     TreeNode* newNode = new TreeNode(fileName);
     return newNode;
 }
 
+/*
+@ Function Name: TreeNode::insert_child_node
+@ args: fileName
+@ description: Insert a child TreeNode to children set.
+*/
 void TreeNode::insert_child_node(const std::string& fileName) {
     TreeNode *newNode = create_TreeNode(fileName);
     if (!newNode) {
@@ -38,9 +54,16 @@ void TreeNode::insert_child_node(const std::string& fileName) {
     this->_children.push_back(std::make_pair(fileName, newNode));
 }
 
+/*
+@ Function Name: TreeNode::get_TreeNode
+@ args: fileName
+@ ret: Return the TreeNode of fileName, or nullptr if not found.
+@ description: To search a TreeNode named fileName in this->_children, 
+               if exists return fileName's TreeNode, if not return nullptr.
+*/
 TreeNode* TreeNode::get_TreeNode(const std::string& fileName) {
     for (auto it = _children.begin(); it != _children.end(); ++it) {
-        if (fileName.find(it->first) != std::string::npos) {
+        if (!strcmp(fileName.c_str(), it->first.c_str())) {
             return it->second;
         }
     }
@@ -48,6 +71,37 @@ TreeNode* TreeNode::get_TreeNode(const std::string& fileName) {
     return nullptr;
 }
 
+/*
+@ Function Name: TreeNode::find_TreeNode
+@ args: abosultePath
+@ ret: Return the TreeNode of abosultePath, or nullptr if not found.
+@ description: To search recursively whether absolutePath in root or not, 
+               if in return absolutePath's TreeNode, if not return nullptr.
+*/
+TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePath) {
+    // std::vector<std::string> arr_absolutePath = abosultePath.
+    // LOGI << TAG << "abosultePath: " << abosultePath << "\n";
+    TreeNode* result = root;
+    std::queue<std::string> que;
+    split_string_to_vector(abosultePath, que, "/");
+    while (!que.empty()) {
+        // LOGI << TAG << "que.front(): " << que.front() << "\n";
+        result = result->get_TreeNode(que.front());
+        que.pop();
+        if (!result) {
+            return nullptr;
+        }      
+    }
+
+    // LOGI << TAG << "result->_node_info._absolute_path: " << result->_node_info._absolute_path.string() << "\n";
+    return result;
+}
+
+/*
+@ Function Name: TreeNode::erase_all
+@ args: node
+@ description: Delete all sub-node and itself recrusively.
+*/
 void TreeNode::erase_all(TreeNode* node) {
     for (auto it = node->_children.begin(); it != node->_children.end(); it++) {
         erase_all(it->second);
@@ -61,6 +115,11 @@ void TreeNode::erase_all(TreeNode* node) {
     delete node;
 }
 
+/*
+@ Function Name: TreeNode::remove_node
+@ args: fileName
+@ description: Remove the node of fileName and all nodes inferior than the node of fileName.
+*/
 void TreeNode::remove_node(const std::string& fileName) {
     TreeNode *node = get_TreeNode(fileName);
     if (!node) {
@@ -93,7 +152,12 @@ void TreeNode::remove_node(const std::string& fileName) {
     delete node;
 }
 
-void TreeNode::iterate_path(const std::string& path) {
+/*
+@ Function Name: TreeNode::create_path
+@ args: path
+@ description: Construct a TreeNode-tree based on path.
+*/
+void TreeNode::create_path(const std::string& path) {
     const std::filesystem::path sandbox(path);
     // LOGI << "iterate_path: " << sandbox << "\n";
     for (auto const& dir_entry : std::filesystem::directory_iterator{sandbox}) {
@@ -102,7 +166,7 @@ void TreeNode::iterate_path(const std::string& path) {
             TreeNode *current_dir = this->get_TreeNode(std::filesystem::path(dir_entry).filename().string());
             assert(current_dir != nullptr);
 
-            current_dir->iterate_path(std::filesystem::path(dir_entry));
+            current_dir->create_path(std::filesystem::path(dir_entry));
         }
     }
 }
@@ -114,6 +178,11 @@ void TreeNode::update_node_info(NodeInfo *nodeInfo) {
 //  for test
 void TreeNode::iterate_all_children(TreeNode* root) {
     if (!root) {
+        return;
+    }
+
+    if (root->_children.empty()) {
+        std::cout << "|---- " << root->_node_info._file_name << "\n";
         return;
     }
 
