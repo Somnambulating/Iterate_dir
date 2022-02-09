@@ -11,6 +11,13 @@ TreeNode::TreeNode(std::string fileName) {
      */
 }
 
+TreeNode* TreeNode::create_root(const std::string& fileName) {
+    TreeNode* root = create_TreeNode(fileName);
+    root->_node_info._file_name = fileName;
+    root->_node_info._absolute_path = fileName;
+    return root;
+}
+
 TreeNode* TreeNode::create_TreeNode(const std::string& fileName) {
     TreeNode* newNode = new TreeNode(fileName);
     return newNode;
@@ -23,6 +30,11 @@ void TreeNode::insert_child_node(const std::string& fileName) {
         return;
     }
     newNode->_parent = this;
+    newNode->_node_info._file_name = fileName;
+    newNode->_node_info._absolute_path = this->_node_info._absolute_path;   newNode->_node_info._absolute_path.append(fileName);
+
+    // LOGI << TAG << "_absolute_path: " << newNode->_node_info._absolute_path.string() << "\n";
+
     this->_children.push_back(std::make_pair(fileName, newNode));
 }
 
@@ -42,6 +54,10 @@ void TreeNode::erase_all(TreeNode* node) {
         node->_children.erase(it);
     }
 
+    if (!std::filesystem::exists(node->_node_info._absolute_path)) {
+        LOGE << TAG << node->_node_info._absolute_path.c_str() << " not exists.\n";
+    }
+    std::remove(node->_node_info._absolute_path.c_str());
     delete node;
 }
 
@@ -70,6 +86,10 @@ void TreeNode::remove_node(const std::string& fileName) {
     node->_children.erase(node->_children.begin(), node->_children.end());
 
     // // remove itself
+    if (!std::filesystem::exists(node->_node_info._absolute_path)) {
+        LOGE << TAG << node->_node_info._absolute_path.c_str() << " not exists.\n";
+    }
+    std::remove(node->_node_info._absolute_path.c_str());
     delete node;
 }
 
@@ -87,8 +107,16 @@ void TreeNode::iterate_path(const std::string& path) {
     }
 }
 
+void TreeNode::update_node_info(NodeInfo *nodeInfo) {
+    //  TODO: 
+}
+
 //  for test
 void TreeNode::iterate_all_children(TreeNode* root) {
+    if (!root) {
+        return;
+    }
+
     std::queue<TreeNode*> que;
     que.push(root);
 
@@ -103,7 +131,9 @@ void TreeNode::iterate_all_children(TreeNode* root) {
             nums++;
 
             que.push(it->second);
-            std::cout << "|---- " << it->first << "\n";
+            // std::cout << "|---- " << it->first << "\n";
+            // std::cout << "|---- " << it->second->_node_info._absolute_path.string() << "\n";
+            std::cout << "|---- " << it->second->_node_info._file_name << "\n";
         }
         
         std::cout << "\n\n";

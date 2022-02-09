@@ -5,6 +5,7 @@
 #include <string>
 #include <ctype.h>
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <queue>
 #include <cstdlib>
@@ -16,6 +17,7 @@
  */
 struct NodeInfo {
     std::string _file_name;
+    std::filesystem::path _absolute_path;
 
     /*
         其它信息
@@ -34,12 +36,14 @@ public:
     TreeNode(std::string fileName);
     ~TreeNode() {}
 
-    TreeNode* create_TreeNode(const std::string& fileName);
+    static TreeNode* create_root(const std::string& fileName);
+    static TreeNode* create_TreeNode(const std::string& fileName);
     void insert_child_node(const std::string& fileName);
     TreeNode* get_TreeNode(const std::string& fileName);
     void erase_all(TreeNode* node);
     void remove_node(const std::string& filename);
     void iterate_path(const std::string& path);
+    void update_node_info(NodeInfo *nodeInfo);
 
     // for test
     void iterate_all_children(TreeNode* node);
