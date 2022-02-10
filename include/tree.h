@@ -65,6 +65,6 @@ public:
 private:
 
     TreeNode* _parent;
-    std::list<std::pair<std::string, TreeNode*>> _children;
+    std::list<TreeNode*> _children;
 };
 #endif

@@ -73,7 +73,7 @@ void TreeNode::insert_child_node(const std::string& fileName) {
     newNode->_parent = this;
     newNode->_node_info._file_name = fileName;
 
-    this->_children.push_back(std::make_pair(fileName, newNode));
+    this->_children.push_back(newNode);
 }
 
 /*
@@ -94,8 +94,8 @@ TreeNode* TreeNode::get_parent_TreeNode(TreeNode* node) {
 */
 TreeNode* TreeNode::get_TreeNode(const std::string& fileName) {
     for (auto it = _children.begin(); it != _children.end(); ++it) {
-        if (!strcmp(fileName.c_str(), it->first.c_str())) {
-            return it->second;
+        if (!strcmp(fileName.c_str(), (*it)->_node_info.get_file_name().c_str())) {
+            return *it;
         }
     }
 
@@ -150,7 +150,7 @@ std::filesystem::path TreeNode::get_absolute_path(TreeNode *node) {
 */
 void TreeNode::erase_all(TreeNode* node, std::filesystem::path& absolutePath) {
     for (auto it = node->_children.begin(); it != node->_children.end(); it++) {
-        erase_all(it->second, absolutePath.append(it->first));
+        erase_all(*(it), absolutePath.append((*it)->_node_info.get_file_name().c_str()));
     }
     node->_children.clear();
 
@@ -180,7 +180,7 @@ void TreeNode::remove_node(const std::string& fileName) {
     TreeNode* parent = get_parent_TreeNode(node);
     if (parent != nullptr) {
         for (auto it = parent->_children.begin(); it != parent->_children.end(); ++it) {
-            if (it->second == node) {
+            if (*(it) == node) {
                 parent->_children.erase(it);
                 break;
             }
@@ -189,7 +189,7 @@ void TreeNode::remove_node(const std::string& fileName) {
 
     // // remove children nodes of the node
     for (auto it = node->_children.begin(); it != node->_children.end(); ++it) {
-        erase_all(it->second, absolute_path.append(it->first));
+        erase_all(*it, absolute_path.append((*it)->_node_info.get_file_name()));
     }
     node->_children.clear();
 
@@ -255,9 +255,9 @@ void TreeNode::iterate_all_children(TreeNode* root) {
         for (auto it = node->_children.begin(); it != node->_children.end(); ++it) {
             nums++;
 
-            que.push(it->second);
+            que.push(*(it));
             // std::cout << "|---- " << it->first << "\n";
-            std::cout << "|---- " << it->second->_node_info._file_name << "\n";
+            std::cout << "|---- " << (*it)->_node_info.get_file_name().c_str() << "\n";
         }
         
         std::cout << "\n\n";
