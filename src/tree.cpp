@@ -3,6 +3,32 @@
 
 #define TAG "tree.cpp-> "
 
+//===========================
+//  NodeInfo struct
+//===========================
+
+/*
+@ Function Name: NodeInfo::get_file_name
+@ args: None
+@ ret: Return _file_name.
+*/
+std::string NodeInfo::get_file_name() {
+    return this->_file_name;
+}
+
+/*
+@ Function Name: NodeInfo::update_file_name
+@ args: fileName
+@ ret: Update _file_name with fileName.
+*/
+void NodeInfo::update_file_name(std::string fileName) {
+    this->_file_name = fileName;
+}
+
+
+//===========================
+//  TreeNode class
+//===========================
 TreeNode::TreeNode(std::string fileName) {
     this->_parent = nullptr;
     this->_node_info._file_name = fileName;
@@ -19,7 +45,6 @@ TreeNode::TreeNode(std::string fileName) {
 TreeNode* TreeNode::create_root(const std::string& fileName) {
     TreeNode* root = create_TreeNode(fileName);
     root->_node_info._file_name = fileName;
-    root->_node_info._absolute_path = fileName;
     return root;
 }
 
@@ -47,11 +72,17 @@ void TreeNode::insert_child_node(const std::string& fileName) {
     }
     newNode->_parent = this;
     newNode->_node_info._file_name = fileName;
-    newNode->_node_info._absolute_path = this->_node_info._absolute_path;   newNode->_node_info._absolute_path.append(fileName);
 
-    // LOGI << TAG << "_absolute_path: " << newNode->_node_info._absolute_path.string() << "\n";
+    this->_children.push_back(newNode);
+}
 
-    this->_children.push_back(std::make_pair(fileName, newNode));
+/*
+@ Function Name: TreeNode::get_parent_TreeNode
+@ args: node
+@ ret: Return the parent TreeNode of the node, or nullptr if not found.
+*/
+TreeNode* TreeNode::get_parent_TreeNode(TreeNode* node) {
+    return node->_parent != nullptr? node->_parent: nullptr;
 }
 
 /*
@@ -63,8 +94,8 @@ void TreeNode::insert_child_node(const std::string& fileName) {
 */
 TreeNode* TreeNode::get_TreeNode(const std::string& fileName) {
     for (auto it = _children.begin(); it != _children.end(); ++it) {
-        if (!strcmp(fileName.c_str(), it->first.c_str())) {
-            return it->second;
+        if (!strcmp(fileName.c_str(), (*it)->_node_info.get_file_name().c_str())) {
+            return *it;
         }
     }
 
@@ -93,8 +124,23 @@ TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePat
         }      
     }
 
-    // LOGI << TAG << "result->_node_info._absolute_path: " << result->_node_info._absolute_path.string() << "\n";
     return result;
+}
+
+/*
+@ Function Name: TreeNode::get_absolute_path
+@ args: node
+@ description: Return absolute path of the node.
+*/
+std::filesystem::path TreeNode::get_absolute_path(TreeNode *node) {
+    std::filesystem::path absolute_path;
+    if (!get_parent_TreeNode(node)) {
+        return node->_node_info._file_name;
+    }
+    
+    absolute_path = get_absolute_path(get_parent_TreeNode(node));
+    absolute_path.append(node->_node_info._file_name);
+    return absolute_path;
 }
 
 /*
@@ -102,17 +148,19 @@ TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePat
 @ args: node
 @ description: Delete all sub-node and itself recrusively.
 */
-void TreeNode::erase_all(TreeNode* node) {
+void TreeNode::erase_all(TreeNode* node, std::filesystem::path& absolutePath) {
     for (auto it = node->_children.begin(); it != node->_children.end(); it++) {
-        erase_all(it->second);
-        node->_children.erase(it);
+        erase_all(*(it), absolutePath.append((*it)->_node_info.get_file_name().c_str()));
     }
+    node->_children.clear();
 
-    if (!std::filesystem::exists(node->_node_info._absolute_path)) {
-        LOGE << TAG << node->_node_info._absolute_path.c_str() << " not exists.\n";
+    if (!std::filesystem::exists(absolutePath)) {
+        LOGE << TAG << absolutePath.c_str() << " not exists.\n";
+        return;
     }
-    std::remove(node->_node_info._absolute_path.c_str());
+    std::remove(absolutePath.c_str());
     delete node;
+    absolutePath.remove_filename();
 }
 
 /*
@@ -122,16 +170,17 @@ void TreeNode::erase_all(TreeNode* node) {
 */
 void TreeNode::remove_node(const std::string& fileName) {
     TreeNode *node = get_TreeNode(fileName);
+    std::filesystem::path absolute_path = get_absolute_path(node);
     if (!node) {
         LOGE << TAG << "Cannot remove the node: " << fileName << "\n";
         return;
     }
 
     // remove the node from parent._children
-    TreeNode* parent = node->_parent;
+    TreeNode* parent = get_parent_TreeNode(node);
     if (parent != nullptr) {
         for (auto it = parent->_children.begin(); it != parent->_children.end(); ++it) {
-            if (it->second == node) {
+            if (*(it) == node) {
                 parent->_children.erase(it);
                 break;
             }
@@ -140,15 +189,15 @@ void TreeNode::remove_node(const std::string& fileName) {
 
     // // remove children nodes of the node
     for (auto it = node->_children.begin(); it != node->_children.end(); ++it) {
-        erase_all(it->second);
+        erase_all(*it, absolute_path.append((*it)->_node_info.get_file_name()));
     }
-    node->_children.erase(node->_children.begin(), node->_children.end());
+    node->_children.clear();
 
     // // remove itself
-    if (!std::filesystem::exists(node->_node_info._absolute_path)) {
-        LOGE << TAG << node->_node_info._absolute_path.c_str() << " not exists.\n";
+    if (!std::filesystem::exists(absolute_path.string())) {
+        LOGE << TAG << absolute_path.c_str() << " not exists.\n";
     }
-    std::remove(node->_node_info._absolute_path.c_str());
+    std::remove(absolute_path.c_str());
     delete node;
 }
 
@@ -171,8 +220,15 @@ void TreeNode::create_path(const std::string& path) {
     }
 }
 
-void TreeNode::update_node_info(NodeInfo *nodeInfo) {
-    //  TODO: 
+void TreeNode::update_node_info(NodeInfo *nodeInfo, NODEINFOTYPE nodeInfoType) {
+    switch(nodeInfoType) {
+    case FILENAME:
+        _node_info.update_file_name(nodeInfo->get_file_name());
+        break;
+
+    default:
+        LOGE << TAG << "Cannot recognize nodeInfoType: " << nodeInfoType << "\n"; 
+    }
 }
 
 //  for test
@@ -199,10 +255,9 @@ void TreeNode::iterate_all_children(TreeNode* root) {
         for (auto it = node->_children.begin(); it != node->_children.end(); ++it) {
             nums++;
 
-            que.push(it->second);
+            que.push(*(it));
             // std::cout << "|---- " << it->first << "\n";
-            // std::cout << "|---- " << it->second->_node_info._absolute_path.string() << "\n";
-            std::cout << "|---- " << it->second->_node_info._file_name << "\n";
+            std::cout << "|---- " << (*it)->_node_info.get_file_name().c_str() << "\n";
         }
         
         std::cout << "\n\n";
