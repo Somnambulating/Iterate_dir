@@ -151,8 +151,8 @@ std::filesystem::path TreeNode::get_absolute_path(TreeNode *node) {
 void TreeNode::erase_all(TreeNode* node, std::filesystem::path& absolutePath) {
     for (auto it = node->_children.begin(); it != node->_children.end(); it++) {
         erase_all(it->second, absolutePath.append(it->first));
-        node->_children.erase(it);
     }
+    node->_children.clear();
 
     if (!std::filesystem::exists(absolutePath)) {
         LOGE << TAG << absolutePath.c_str() << " not exists.\n";
