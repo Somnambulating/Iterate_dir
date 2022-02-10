@@ -3,6 +3,32 @@
 
 #define TAG "tree.cpp-> "
 
+//===========================
+//  NodeInfo struct
+//===========================
+
+/*
+@ Function Name: NodeInfo::get_file_name
+@ args: None
+@ ret: Return _file_name.
+*/
+std::string NodeInfo::get_file_name() {
+    return this->_file_name;
+}
+
+/*
+@ Function Name: NodeInfo::update_file_name
+@ args: fileName
+@ ret: Update _file_name with fileName.
+*/
+void NodeInfo::update_file_name(std::string fileName) {
+    this->_file_name = fileName;
+}
+
+
+//===========================
+//  TreeNode class
+//===========================
 TreeNode::TreeNode(std::string fileName) {
     this->_parent = nullptr;
     this->_node_info._file_name = fileName;
@@ -48,6 +74,15 @@ void TreeNode::insert_child_node(const std::string& fileName) {
     newNode->_node_info._file_name = fileName;
 
     this->_children.push_back(std::make_pair(fileName, newNode));
+}
+
+/*
+@ Function Name: TreeNode::get_parent_TreeNode
+@ args: node
+@ ret: Return the parent TreeNode of the node, or nullptr if not found.
+*/
+TreeNode* TreeNode::get_parent_TreeNode(TreeNode* node) {
+    return node->_parent != nullptr? node->_parent: nullptr;
 }
 
 /*
@@ -99,11 +134,11 @@ TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePat
 */
 std::filesystem::path TreeNode::get_absolute_path(TreeNode *node) {
     std::filesystem::path absolute_path;
-    if (!node->_parent) {
+    if (!get_parent_TreeNode(node)) {
         return node->_node_info._file_name;
     }
     
-    absolute_path = get_absolute_path(node->_parent);
+    absolute_path = get_absolute_path(get_parent_TreeNode(node));
     absolute_path.append(node->_node_info._file_name);
     return absolute_path;
 }
@@ -142,7 +177,7 @@ void TreeNode::remove_node(const std::string& fileName) {
     }
 
     // remove the node from parent._children
-    TreeNode* parent = node->_parent;
+    TreeNode* parent = get_parent_TreeNode(node);
     if (parent != nullptr) {
         for (auto it = parent->_children.begin(); it != parent->_children.end(); ++it) {
             if (it->second == node) {
@@ -185,8 +220,15 @@ void TreeNode::create_path(const std::string& path) {
     }
 }
 
-void TreeNode::update_node_info(NodeInfo *nodeInfo) {
-    //  TODO: 
+void TreeNode::update_node_info(NodeInfo *nodeInfo, NODEINFOTYPE nodeInfoType) {
+    switch(nodeInfoType) {
+    case FILENAME:
+        _node_info.update_file_name(nodeInfo->get_file_name());
+        break;
+
+    default:
+        LOGE << TAG << "Cannot recognize nodeInfoType: " << nodeInfoType << "\n"; 
+    }
 }
 
 //  for test
