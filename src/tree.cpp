@@ -19,7 +19,6 @@ TreeNode::TreeNode(std::string fileName) {
 TreeNode* TreeNode::create_root(const std::string& fileName) {
     TreeNode* root = create_TreeNode(fileName);
     root->_node_info._file_name = fileName;
-    root->_node_info._absolute_path = fileName;
     return root;
 }
 
