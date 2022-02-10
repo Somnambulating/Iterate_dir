@@ -47,9 +47,6 @@ void TreeNode::insert_child_node(const std::string& fileName) {
     }
     newNode->_parent = this;
     newNode->_node_info._file_name = fileName;
-    newNode->_node_info._absolute_path = this->_node_info._absolute_path;   newNode->_node_info._absolute_path.append(fileName);
-
-    // LOGI << TAG << "_absolute_path: " << newNode->_node_info._absolute_path.string() << "\n";
 
     this->_children.push_back(std::make_pair(fileName, newNode));
 }
@@ -93,8 +90,23 @@ TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePat
         }      
     }
 
-    // LOGI << TAG << "result->_node_info._absolute_path: " << result->_node_info._absolute_path.string() << "\n";
     return result;
+}
+
+/*
+@ Function Name: TreeNode::get_absolute_path
+@ args: node
+@ description: Return absolute path of the node.
+*/
+std::filesystem::path TreeNode::get_absolute_path(TreeNode *node) {
+    std::filesystem::path absolute_path;
+    if (!node->_parent) {
+        return node->_node_info._file_name;
+    }
+    
+    absolute_path = get_absolute_path(node->_parent);
+    absolute_path.append(node->_node_info._file_name);
+    return absolute_path;
 }
 
 /*
@@ -102,17 +114,19 @@ TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePat
 @ args: node
 @ description: Delete all sub-node and itself recrusively.
 */
-void TreeNode::erase_all(TreeNode* node) {
+void TreeNode::erase_all(TreeNode* node, std::filesystem::path& absolutePath) {
     for (auto it = node->_children.begin(); it != node->_children.end(); it++) {
-        erase_all(it->second);
+        erase_all(it->second, absolutePath.append(it->first));
         node->_children.erase(it);
     }
 
-    if (!std::filesystem::exists(node->_node_info._absolute_path)) {
-        LOGE << TAG << node->_node_info._absolute_path.c_str() << " not exists.\n";
+    if (!std::filesystem::exists(absolutePath)) {
+        LOGE << TAG << absolutePath.c_str() << " not exists.\n";
+        return;
     }
-    std::remove(node->_node_info._absolute_path.c_str());
+    std::remove(absolutePath.c_str());
     delete node;
+    absolutePath.remove_filename();
 }
 
 /*
@@ -122,6 +136,7 @@ void TreeNode::erase_all(TreeNode* node) {
 */
 void TreeNode::remove_node(const std::string& fileName) {
     TreeNode *node = get_TreeNode(fileName);
+    std::filesystem::path absolute_path = get_absolute_path(node);
     if (!node) {
         LOGE << TAG << "Cannot remove the node: " << fileName << "\n";
         return;
@@ -140,15 +155,15 @@ void TreeNode::remove_node(const std::string& fileName) {
 
     // // remove children nodes of the node
     for (auto it = node->_children.begin(); it != node->_children.end(); ++it) {
-        erase_all(it->second);
+        erase_all(it->second, absolute_path.append(it->first));
     }
-    node->_children.erase(node->_children.begin(), node->_children.end());
+    node->_children.clear();
 
     // // remove itself
-    if (!std::filesystem::exists(node->_node_info._absolute_path)) {
-        LOGE << TAG << node->_node_info._absolute_path.c_str() << " not exists.\n";
+    if (!std::filesystem::exists(absolute_path.string())) {
+        LOGE << TAG << absolute_path.c_str() << " not exists.\n";
     }
-    std::remove(node->_node_info._absolute_path.c_str());
+    std::remove(absolute_path.c_str());
     delete node;
 }
 
@@ -201,7 +216,6 @@ void TreeNode::iterate_all_children(TreeNode* root) {
 
             que.push(it->second);
             // std::cout << "|---- " << it->first << "\n";
-            // std::cout << "|---- " << it->second->_node_info._absolute_path.string() << "\n";
             std::cout << "|---- " << it->second->_node_info._file_name << "\n";
         }
         

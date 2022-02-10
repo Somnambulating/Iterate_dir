@@ -19,7 +19,6 @@
  */
 struct NodeInfo {
     std::string _file_name;
-    std::filesystem::path _absolute_path;
 
     /*
         其它信息
@@ -43,7 +42,8 @@ public:
     void insert_child_node(const std::string& fileName);
     TreeNode* get_TreeNode(const std::string& fileName);
     static TreeNode* find_TreeNode(TreeNode* root, const std::string& abosultePath);
-    void erase_all(TreeNode* node);
+    static std::filesystem::path get_absolute_path(TreeNode *node);
+    void erase_all(TreeNode* node, std::filesystem::path& absolutePath);
     void remove_node(const std::string& filename);
     void create_path(const std::string& path);
     void update_node_info(NodeInfo *nodeInfo);
