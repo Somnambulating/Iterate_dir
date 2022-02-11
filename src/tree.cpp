@@ -104,17 +104,15 @@ TreeNode* TreeNode::get_TreeNode(const std::string& fileName) {
 
 /*
 @ Function Name: TreeNode::find_TreeNode
-@ args: abosultePath
-@ ret: Return the TreeNode of abosultePath, or nullptr if not found.
-@ description: To search recursively whether absolutePath in root or not, 
-               if in return absolutePath's TreeNode, if not return nullptr.
+@ args: relativePath
+@ ret: Return the TreeNode of relativePath, or nullptr if not found.
+@ description: To search recursively whether relativePath in root or not, 
+               if in return relativePath's TreeNode, if not return nullptr.
 */
-TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& abosultePath) {
-    // std::vector<std::string> arr_absolutePath = abosultePath.
-    // LOGI << TAG << "abosultePath: " << abosultePath << "\n";
+TreeNode* TreeNode::find_TreeNode(TreeNode* root, const std::string& relativePath) {
     TreeNode* result = root;
     std::queue<std::string> que;
-    split_string_to_vector(abosultePath, que, "/");
+    split_string_to_vector(relativePath, que, "/");
     while (!que.empty()) {
         // LOGI << TAG << "que.front(): " << que.front() << "\n";
         result = result->get_TreeNode(que.front());
@@ -148,19 +146,13 @@ std::filesystem::path TreeNode::get_absolute_path(TreeNode *node) {
 @ args: node
 @ description: Delete all sub-node and itself recrusively.
 */
-void TreeNode::erase_all(TreeNode* node, std::filesystem::path& absolutePath) {
+void TreeNode::erase_all(TreeNode* node) {
     for (auto it = node->_children.begin(); it != node->_children.end(); it++) {
-        erase_all(*(it), absolutePath.append((*it)->_node_info.get_file_name().c_str()));
+        erase_all(*it);
     }
+    
     node->_children.clear();
-
-    if (!std::filesystem::exists(absolutePath)) {
-        LOGE << TAG << absolutePath.c_str() << " not exists.\n";
-        return;
-    }
-    std::remove(absolutePath.c_str());
     delete node;
-    absolutePath.remove_filename();
 }
 
 /*
@@ -170,7 +162,6 @@ void TreeNode::erase_all(TreeNode* node, std::filesystem::path& absolutePath) {
 */
 void TreeNode::remove_node(const std::string& fileName) {
     TreeNode *node = get_TreeNode(fileName);
-    std::filesystem::path absolute_path = get_absolute_path(node);
     if (!node) {
         LOGE << TAG << "Cannot remove the node: " << fileName << "\n";
         return;
@@ -187,27 +178,23 @@ void TreeNode::remove_node(const std::string& fileName) {
         }
     }
 
-    // // remove children nodes of the node
+    // remove children nodes of the node
     for (auto it = node->_children.begin(); it != node->_children.end(); ++it) {
-        erase_all(*it, absolute_path.append((*it)->_node_info.get_file_name()));
+        erase_all(*it);
     }
     node->_children.clear();
 
-    // // remove itself
-    if (!std::filesystem::exists(absolute_path.string())) {
-        LOGE << TAG << absolute_path.c_str() << " not exists.\n";
-    }
-    std::remove(absolute_path.c_str());
+    // remove itself
     delete node;
 }
 
 /*
 @ Function Name: TreeNode::create_path
-@ args: path
+@ args: absolutePath
 @ description: Construct a TreeNode-tree based on path.
 */
-void TreeNode::create_path(const std::string& path) {
-    const std::filesystem::path sandbox(path);
+void TreeNode::create_tree(const std::string& absolutePath) {
+    const std::filesystem::path sandbox(absolutePath);
     // LOGI << "iterate_path: " << sandbox << "\n";
     for (auto const& dir_entry : std::filesystem::directory_iterator{sandbox}) {
         insert_child_node(std::filesystem::path(dir_entry).filename().string());
@@ -215,14 +202,17 @@ void TreeNode::create_path(const std::string& path) {
             TreeNode *current_dir = this->get_TreeNode(std::filesystem::path(dir_entry).filename().string());
             assert(current_dir != nullptr);
 
-            current_dir->create_path(std::filesystem::path(dir_entry));
+            current_dir->create_tree(std::filesystem::path(dir_entry));
         }
     }
 }
 
 void TreeNode::update_node_info(NodeInfo *nodeInfo, NODEINFOTYPE nodeInfoType) {
+    std::filesystem::path absolute_path = TreeNode::get_absolute_path(this);
+
     switch(nodeInfoType) {
     case FILENAME:
+        std::filesystem::rename(absolute_path, std::filesystem::path(absolute_path).parent_path().append(nodeInfo->get_file_name()));
         _node_info.update_file_name(nodeInfo->get_file_name());
         break;
 
