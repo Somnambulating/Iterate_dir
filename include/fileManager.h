@@ -12,17 +12,21 @@ public:
     FileManager();
     ~FileManager() {}
 
-    bool init(std::string rootPath);
+    bool init(const std::string rootPath);
 
-    bool checkout();                                                     //  锁定资源并下载
-    bool checkin();                                                      //  提交修改的文件并解锁
-    Buffer* get_lasted_version();                                        //  获取最新版本的文件
-    bool rename_file(const std::filesystem::path& filePath);             //  重命名文件
-    bool import();                                                       //  上传文件
-    bool remove_file(const std::filesystem::path& filePath);             //  删除文件
+    bool checkout();                                                                                 //  lock file and download
+    bool checkin();                                                                                  //  Commit the modified file and unlock
+    Buffer* get_lasted_version();                                                                    //  get the lasted-version file
+    bool rename_file(const std::filesystem::path& filePath, const std::string& newName);             //  rename file
+    bool import();                                                                                   //  upload file
+    bool remove_file(const std::filesystem::path& filePath);                                         //  Remove file
+
+    //  test
+    void print_all_files();
 
 private:
     TreeNode* is_exists(const std::filesystem::path& filePath);
+    std::filesystem::path get_relative_path(const std::filesystem::path& absolutePath);
 
 private:
     TreeNode* _root;
