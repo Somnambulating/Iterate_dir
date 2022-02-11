@@ -207,6 +207,12 @@ void TreeNode::create_tree(const std::string& absolutePath) {
     }
 }
 
+/*
+@ Function Name: TreeNode::update_node_info
+@ args: nodeInfo, nodeInfoType
+@ description: Modify the content of this->_node_info with nodeInfo. 
+            nodeInfoType indicates the target item inner NodeInfo structure will be modified.
+*/
 void TreeNode::update_node_info(NodeInfo *nodeInfo, NODEINFOTYPE nodeInfoType) {
     std::filesystem::path absolute_path = TreeNode::get_absolute_path(this);
 
